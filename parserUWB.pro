@@ -1,6 +1,6 @@
-QT -= gui
+QT += gui widgets
 
-QT += core network
+QT += core network charts
 QT += serialport
 
 CONFIG += c++11 console
@@ -11,6 +11,7 @@ CONFIG -= app_bundle
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+        map/map.cpp\
         kx_pult/kx_protocol.cpp \
         kx_pult/qkx_coeffs.cpp \
         kx_pult/qpiconfig.cpp \
@@ -24,7 +25,10 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 HEADERS += \
+    map/map.h \
     kx_pult/kx_protocol.h \
     kx_pult/qkx_coeffs.h \
     kx_pult/qpiconfig.h \
     protocoluwb.h
+
+FORMS += map/map.ui

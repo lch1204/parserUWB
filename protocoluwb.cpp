@@ -16,6 +16,8 @@ protocolUWB::protocolUWB(const QString& portName,
     mFlow(flow),
     mTimer(this) {
     connect(&mTimer, &QTimer::timeout, this, &protocolUWB::tick_UWB);
+    connect(&timer, &QTimer::timeout, this, &protocolUWB::updateMap);
+    timer.start(1000);
 
     //алгоритм обращения к каждому биту
 //    for (int i = 15; i>=0; i --)
@@ -199,6 +201,8 @@ void protocolUWB::stop() {
         protUWB->close();
     emit finished();
 }
+
+
 
 protocolUWB::~protocolUWB() {
     stop();

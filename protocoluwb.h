@@ -111,8 +111,15 @@ private slots:
 public slots:
     virtual void start();
     virtual void stop();
+    void updateMap();
+signals:
+    void renewR1(double r);
+    void renewR2(double r);
+    void renewR3(double r);
+    void renewCurrentCoords(double _x, double _y);
 
 protected:
+    QTimer timer;
     void integrate(double &input, double &output, double &prevOutput, double dt);
     unsigned short calculateCRC(QByteArray array);
     QByteArray m_buffer;
@@ -128,7 +135,7 @@ protected:
     float filter(float input, double &output, int &i, int j);
     RecDataUWB* msg;
     QTime timeRegulator;
-    float trilater();
+    void trilater();
     int x1, x2, x3, y1, y2, y3, z1, z2, z3;
 
 
