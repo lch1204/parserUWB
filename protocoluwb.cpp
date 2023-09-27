@@ -1,7 +1,9 @@
 #include "protocoluwb.h"
 #include <math.h>
+#include "QDataStream"
 
-protocolUWB::protocolUWB(const QString& portName,
+
+ProtocolUWB::ProtocolUWB(const QString& portName,
                          const qint32 baud,
                          const QSerialPort::DataBits data,
                          const QSerialPort::StopBits stop,
@@ -15,9 +17,8 @@ protocolUWB::protocolUWB(const QString& portName,
     mParity(parity),
     mFlow(flow),
     mTimer(this) {
-    connect(&mTimer, &QTimer::timeout, this, &protocolUWB::tick_UWB);
-    connect(&timer, &QTimer::timeout, this, &protocolUWB::updateMap);
-    timer.start(1000);
+    connect(&mTimer, &QTimer::timeout, this, &ProtocolUWB::tick_UWB);
+
 
     //алгоритм обращения к каждому биту
 //    for (int i = 15; i>=0; i --)
@@ -29,7 +30,7 @@ protocolUWB::protocolUWB(const QString& portName,
 //    }
 }
 
-void protocolUWB::start()
+void ProtocolUWB::start()
 {
     if (protUWB->isOpen()) {
         qDebug() << "Duplicate open request";
@@ -55,7 +56,7 @@ void protocolUWB::start()
     return;
 }
 
-void protocolUWB::tick_UWB()
+void ProtocolUWB::tick_UWB()
 {
 //    sendData();
 //    qDebug() << "все норм";
@@ -63,11 +64,11 @@ void protocolUWB::tick_UWB()
    {
        mTimer.stop();
        qDebug() << "все норм";
-       connect(protUWB, &QSerialPort::readyRead, this, &protocolUWB::recData);
+       connect(protUWB, &QSerialPort::readyRead, this, &ProtocolUWB::recData);
    }
 }
 
-void protocolUWB::recData()
+void ProtocolUWB::recData()
 {
 //    qDebug() << "все норм1";
     m_buffer.append(protUWB->readAll());
@@ -75,7 +76,7 @@ void protocolUWB::recData()
     parseBuffer();
 }
 
-void protocolUWB::parseBuffer()
+void ProtocolUWB::parseBuffer()
 {
     if (m_buffer.size() <= 2 ) //проверка, что размер буфера больше, чем размер сообщения
     // исправить 4 на правдивое значение
@@ -94,11 +95,45 @@ void protocolUWB::parseBuffer()
     }
     if (correctChecksum(m_buffer.mid(index, 58))) {
         auto tmp = m_buffer.mid(index, 58);
-        msg = reinterpret_cast<RecDataUWB*>(m_buffer.data()+index);
+//        msg = reinterpret_cast<RecDataUWB*>(m_buffer.data()+index);
+
+
+        QDataStream stream(&tmp, QIODevice::ReadOnly);
+        stream.setByteOrder(QDataStream::LittleEndian);
+        stream.setFloatingPointPrecision(QDataStream::SinglePrecision);
+        stream >> msg.headerUWB.agents_number;
+        stream >> msg.headerUWB.self_index;
+        stream >> msg.error_code;
+        stream >> msg.iteration;
+        stream >> msg.message_length;
+        stream >> msg.connection_field;
+        stream >> msg.time01;
+        stream >> msg.time02;
+        stream >> msg.time03;
+        stream >> msg.time10;
+        stream >> msg.time12;
+        stream >> msg.time13;
+        stream >> msg.time20;
+        stream >> msg.time21;
+        stream >> msg.time23;
+        stream >> msg.time30;
+        stream >> msg.time31;
+        stream >> msg.time32;
+        stream >> msg.crc;
+
+
 //        qDebug() << "time23:        " << msg->time23;
 //        printBuffer();
-        dataSend = *msg;
-        distanceCalc();
+//        dataTril = msg;
+//        qDebug() << dataTril.crc;
+        emit renewMapMsg(msg);
+        if (msg.error_code == 0)
+        {
+        emit renewMSG(msg);
+        }
+        else {
+
+        }
         m_buffer.remove(0, index+57);
 //        m_buffer.clear();
     }
@@ -109,37 +144,37 @@ void protocolUWB::parseBuffer()
     return;
 }
 
-void protocolUWB::printBuffer()
+void ProtocolUWB::printBuffer()
 {
-    qDebug() << "agents_number:     " << msg->headerUWB.agents_number;
-    qDebug() << "self_index:        " << msg->headerUWB.self_index;
-    qDebug() << "error_code:        " << msg->error_code;
-    qDebug() << "iteration:         " << msg->iteration;
-    qDebug() << "message_length:    " << msg->message_length;
-    qDebug() << "connection_field:  " << msg->connection_field;
-    qDebug() << "time01:        " << msg->time01;
-    qDebug() << "time02:        " << msg->time02;
-    qDebug() << "time03:        " << msg->time03;
-    qDebug() << "time10:        " << msg->time10;
-    qDebug() << "time12:        " << msg->time12;
-    qDebug() << "time13:        " << msg->time13;
-    qDebug() << "time20:        " << msg->time20;
-    qDebug() << "time21:        " << msg->time21;
-    qDebug() << "time23:        " << msg->time23;
-    qDebug() << "time30:        " << msg->time30;
-    qDebug() << "time31:        " << msg->time31;
-    qDebug() << "time32:        " << msg->time32;
-    qDebug() << "crc:               " << msg->crc;
+    qDebug() << "agents_number:     " << msg.headerUWB.agents_number;
+    qDebug() << "self_index:        " << msg.headerUWB.self_index;
+    qDebug() << "error_code:        " << msg.error_code;
+    qDebug() << "iteration:         " << msg.iteration;
+    qDebug() << "message_length:    " << msg.message_length;
+    qDebug() << "connection_field:  " << msg.connection_field;
+    qDebug() << "time01:            " << msg.time01;
+    qDebug() << "time02:            " << msg.time02;
+    qDebug() << "time03:            " << msg.time03;
+    qDebug() << "time10:            " << msg.time10;
+    qDebug() << "time12:            " << msg.time12;
+    qDebug() << "time13:            " << msg.time13;
+    qDebug() << "time20:            " << msg.time20;
+    qDebug() << "time21:            " << msg.time21;
+    qDebug() << "time23:            " << msg.time23;
+    qDebug() << "time30:            " << msg.time30;
+    qDebug() << "time31:            " << msg.time31;
+    qDebug() << "time32:            " << msg.time32;
+    qDebug() << "crc:               " << msg.crc;
         for (int i = 7; i>=0; i --)
         {
-            if (msg->connection_field & (1<<i))
+            if (msg.connection_field & (1<<i))
                 qDebug() << "1";
             else
                 qDebug() << "0";
         }
 }
 
-bool protocolUWB::sendData() {
+bool ProtocolUWB::sendData() {
     bool ret  = true;
     QByteArray packet;
 // вся посылка не правильная, исправлю когда дима скажет нормальную посылку
@@ -160,7 +195,7 @@ bool protocolUWB::sendData() {
     return ret;
 }
 
-unsigned short protocolUWB::calculateCRC(QByteArray array) {
+unsigned short ProtocolUWB::calculateCRC(QByteArray array) {
 
     int len = array.size();
     quint16 wcrc = 0xFFFF; // preset 16 position crc register , The initial values are all 1
@@ -185,7 +220,7 @@ unsigned short protocolUWB::calculateCRC(QByteArray array) {
     return wcrc;
 }
 
-bool protocolUWB::correctChecksum (QByteArray const &ba) {
+bool ProtocolUWB::correctChecksum (QByteArray const &ba) {
     qint16  crc = calculateCRC(ba.mid(0, 56));
     qint8 crc_low = crc & 0xff;
     qint8 crc_high = (crc >> 8);
@@ -195,7 +230,7 @@ bool protocolUWB::correctChecksum (QByteArray const &ba) {
     return false;
 }
 
-void protocolUWB::stop() {
+void ProtocolUWB::stop() {
     QMutexLocker lock(&mGuard);
     if (protUWB && protUWB->isOpen())
         protUWB->close();
@@ -204,9 +239,9 @@ void protocolUWB::stop() {
 
 
 
-protocolUWB::~protocolUWB() {
-    stop();
-}
+//ProtocolUWB::~ProtocolUWB() {
+//    stop();
+//}
 
 //--------------------------------------------------------------------------------
 //окончание парсинга посылки, далее идет разбор посылки
@@ -214,8 +249,3 @@ protocolUWB::~protocolUWB() {
 
 
 
-
-void prikol ()
-{
-
-}

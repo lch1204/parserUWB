@@ -6,9 +6,9 @@ Map::Map(QWidget *parent) :
     QWidget(parent),
     ui(new Ui::Map)
 {
-    x3 = 435; y3 = 0;
+    x3 = 130; y3 = 0;
     x2 = 0; y2 = 0;
-    x1 = 0; y1 =245;
+    x1 = 0; y1 =60;
     ui->setupUi(this);
     beacon = new QScatterSeries();
     agentCoords = new QScatterSeries();
@@ -30,9 +30,9 @@ Map::Map(QWidget *parent) :
     chart->addSeries(circle3);
     chart->addSeries(agentCoords);
     chart->createDefaultAxes();
-    chart->axes(Qt::Vertical).first()->setRange(-50,300);
+    chart->axes(Qt::Vertical).first()->setRange(-50,100);
     //chart->axes(Qt::Vertical).first()->setRange()
-    chart->axes(Qt::Horizontal).first()->setRange(-50,500);
+    chart->axes(Qt::Horizontal).first()->setRange(-50,150);
     chartView = new QChartView(chart);
 
 
@@ -107,4 +107,38 @@ void Map::drawCurrentCoords(double x, double y)
     agentCoords->clear();
     agentCoords->append(x,y);
 
+}
+
+void Map::printInf(RecDataUWB msg)
+{
+//    ui->module0->setNum(static_cast<double>(msg.time01));
+    ui->module1->setNum(X[41][0]);
+    ui->module2->setNum(X[42][0]);
+    ui->module3->setNum(X[43][0]);
+    ui->xx->setNum(X[51][0]);
+    ui->yy->setNum(X[52][0]);
+    for (int i = 7; i>=0; i --)
+    {
+        if (msg.connection_field & (1<<i))
+            prov[i] = 1;
+//            qDebug() << "1";
+        else
+            prov[i] = 0;
+//            qDebug() << "0";
+    }
+    ui->prov0->setNum(prov[0]);
+    ui->prov1->setNum(prov[1]);
+    ui->prov2->setNum(prov[2]);
+    ui->prov3->setNum(prov[3]);
+    ui->prov4->setNum(prov[4]);
+    ui->prov5->setNum(prov[5]);
+    ui->prov6->setNum(prov[6]);
+    ui->prov7->setNum(prov[7]);
+//    ui->error->setNum(static_cast<double>(msg.error_code));
+    error_counter+=msg.error_code;
+    ui->error->setNum(error_counter);
+//    if (msg.error_code !=0)
+//    {
+//        error_counter++;
+//    }
 }

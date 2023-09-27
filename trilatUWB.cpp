@@ -1,8 +1,17 @@
+#include "TrilatUWB.h"
+//#include <QThread>
 #include "protocoluwb.h"
-#include <math.h>
 
+TrilatUWB:: TrilatUWB(QObject *parent)
+{
 
-float  protocolUWB::saturation(float input, double &prevOutput, float max, float min)
+//    connect(&timeCalc, &QTimer::timeout, this, &TrilatUWB::distanceCalc);
+    connect(&timer, &QTimer::timeout, this, &TrilatUWB::updateMap);
+    timer.start(1000);
+//    timeCalc.start(10);
+}
+
+float  TrilatUWB::saturation(float input, double &prevOutput, float max, float min)
 {
 
     if (input>= max)  return prevOutput;
@@ -14,7 +23,7 @@ float  protocolUWB::saturation(float input, double &prevOutput, float max, float
     }
 }
 
-float protocolUWB::filter(float input, double &output, int &i, int j)
+float TrilatUWB::filter(float input, double &output, int &i, int j)
 {
 
         if (i <5)
@@ -34,14 +43,14 @@ float protocolUWB::filter(float input, double &output, int &i, int j)
 
 }
 
-void protocolUWB::integrate(double &input, double &output, double &prevOutput, double dt) {
+void TrilatUWB::integrate(double &input, double &output, double &prevOutput, double dt) {
 
     output = (prevOutput + dt*input/1)/(1+dt/1);
 //    qDebug() << output;
     prevOutput = output;
 }
 
-float protocolUWB::distanceCalc()
+void TrilatUWB::distanceCalc(RecDataUWB msg)
 {
     dt = timeRegulator.elapsed()*0.001;//реальный временной шаг цикла
     timeRegulator.start();
@@ -69,19 +78,20 @@ float protocolUWB::distanceCalc()
 //    X[102][0] = saturation(dataSend.time01, X[102][1], 40000, 20000);
 //    integrate(X[102][0], X[101][0], X[101][1], dt);
 
-    dist.distance01 = ((dataSend.time01-const01)/a01 + (dataSend.time10-const01)/a01)/2;
-    dist.distance02 = ((dataSend.time02-const02)/a02 + (dataSend.time20-const02)/a02)/2;
-    dist.distance03 = ((dataSend.time03-const03)/a03 + (dataSend.time30-const03)/a03)/2;
-    dist.distance12 = ((dataSend.time12-const12)/a12 + (dataSend.time21-const12)/a12)/2;
-    dist.distance13 = ((dataSend.time13-const13)/a13 + (dataSend.time31-const13)/a13)/2;
-    dist.distance23 = ((dataSend.time23-const01)/a23 + (dataSend.time32-const23)/a23)/2;
 
-    X[1][0] = dist.distance01 = saturation(dist.distance01, X[11][1], 1400, 0);
-    X[2][0] = dist.distance02 = saturation(dist.distance02, X[12][1], 1400, 0);
-    X[3][0] = dist.distance03 = saturation(dist.distance03, X[13][1], 1400, 0);
-    X[4][0] = dist.distance12 = saturation(dist.distance12, X[14][1], 1400, 0);
-    X[5][0] = dist.distance13 = saturation(dist.distance13, X[15][1], 1400, 0);
-    X[6][0] = dist.distance23 = saturation(dist.distance23, X[16][1], 1400, 0);
+    dist.distance01 = ((msg.time01-const01)/a01 + (msg.time10-const01)/a01)/2;
+    dist.distance02 = ((msg.time02-const02)/a02 + (msg.time20-const02)/a02)/2;
+    dist.distance03 = ((msg.time03-const03)/a03 + (msg.time30-const03)/a03)/2;
+    dist.distance12 = ((msg.time12-const12)/a12 + (msg.time21-const12)/a12)/2;
+    dist.distance13 = ((msg.time13-const13)/a13 + (msg.time31-const13)/a13)/2;
+    dist.distance23 = ((msg.time23-const01)/a23 + (msg.time32-const23)/a23)/2;
+
+    X[1][0] = saturation(dist.distance01, X[11][1], 1400, 0);
+    X[2][0] = saturation(dist.distance02, X[12][1], 1400, 0);
+    X[3][0] = saturation(dist.distance03, X[13][1], 1400, 0);
+    X[4][0] = saturation(dist.distance12, X[14][1], 1400, 0);
+    X[5][0] = saturation(dist.distance13, X[15][1], 1400, 0);
+    X[6][0] = saturation(dist.distance23, X[16][1], 1400, 0);
 
     integrate(X[1][0], X[41][0], X[41][1], dt);
     integrate(X[2][0], X[42][0], X[42][1], dt);
@@ -90,37 +100,37 @@ float protocolUWB::distanceCalc()
     integrate(X[5][0], X[45][0], X[45][1], dt);
     integrate(X[6][0], X[46][0], X[46][1], dt);
 
-    dist.distance01 = X[41][0];
-    dist.distance02 = X[42][0];
-    dist.distance03 = X[43][0];
-    dist.distance12 = X[44][0];
-    dist.distance13 = X[45][0];
-    dist.distance23 = X[46][0];
+    distAp.distance01 = X[41][0];
+    distAp.distance02 = X[42][0];
+    distAp.distance03 = X[43][0];
+    distAp.distance12 = X[44][0];
+    distAp.distance13 = X[45][0];
+    distAp.distance23 = X[46][0];
 
-//    qDebug() << "distance01: " << dist.distance01;
-//    qDebug() << "distance02: " << dist.distance02;
-//    qDebug() << "distance03: " << dist.distance03;
-//    qDebug() << "distance12: " << dist.distance12;
-//    qDebug() << "distance13: " << dist.distance13;
-//    qDebug() << "distance23: " << dist.distance23;
+//    qDebug() << "distance01: " << distAp.distance01;
+//    qDebug() << "distance02: " << distAp.distance02;
+//    qDebug() << "distance03: " << distAp.distance03;
+//    qDebug() << "distance12: " << distAp.distance12;
+//    qDebug() << "distance13: " << distAp.distance13;
+//    qDebug() << "distance23: " << distAp.distance23;
 
     trilater();
 
 }
 
-void protocolUWB::trilater()
+void TrilatUWB::trilater()
 {
  // примем,что x1y1 (0, 100); x2y2(0,0), x3y3(100,0)
     x1 = 0;
     x2 = 0;
-    x3 = 435;
-    y1 = 245;
+    x3 = 130;
+    y1 = 60;
     y2 = 0;
     y3 = 0;
     z1 = z2= z3 = 0;
     //следующие две формулы будут использоваться, если 1(0, y1, 0), 2(0, 0, 0), 3(x1, 0, 0)
-    float y0 = (y1*y1 + (dist.distance02)*(dist.distance02) - dist.distance01*dist.distance01)/(2*y1);
-    float x0 = (x3*x3+dist.distance02*dist.distance02-dist.distance03*dist.distance03)/(2*x3);
+    float y0 = (y1*y1 + (distAp.distance02)*(distAp.distance02) - distAp.distance01*distAp.distance01)/(2*y1);
+    float x0 = (x3*x3+distAp.distance02*distAp.distance02-distAp.distance03*distAp.distance03)/(2*x3);
     //следующие две формулы будут использоваться, если 1(x1, y1, 0), 2(0, 0, 0), 3(x1, 0, 0)
 //    float x0 = (x3*x3+dist.distance02*dist.distance02-dist.distance03*dist.distance03)/(2*x3);
 //    float y0 = (y1*y1 + x1*x1 + (dist.distance02)*(dist.distance02) - dist.distance01*dist.distance01)/(2*y1) - x0*x1/y1;
@@ -132,23 +142,10 @@ void protocolUWB::trilater()
     integrate(X[21][0], X[51][0], X[51][1], dt);
     integrate(X[22][0], X[52][0], X[52][1], dt);
 }
-// работа с матрицами
-void protocolUWB:: matrix()
-{
-//    // создадим матрицу A
-//    A[1][1] = x1-x1; A[1][2] = y1-y1; A[1][3] = z1-z1;
-//    A[2][1] = x3-x1; A[1][2] = y2-y1; A[1][3] = z2-z1;
-//    A[3][1] = x3-x1; A[3][2] = y3-y1; A[3][3] = z3-z1;
 
-//    // матрица b
-//    b[1] = dist.distance01*dist.distance01-dist.distance01*dist.distance01-x1*x1-y1*y1-z1*z1+x1*x1+y1*y1+z1*z1;
-//    b[2] = dist.distance01*dist.distance01-dist.distance02*dist.distance02-x1*x1-y1*y1-z1*z1+x2*x2+y2*y2+z2*z2;
-//    b[3] = dist.distance01*dist.distance01-dist.distance03*dist.distance03-x1*x1-y1*y1-z1*z1+x3*x3+y3*y3+z3*z3;
 
-//    //найдем обратную матрицу
-}
 
-void protocolUWB::updateMap()
+void TrilatUWB::updateMap()
 {
     emit renewR1(X[41][0]);
     emit renewR2(X[42][0]);

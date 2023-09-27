@@ -1,6 +1,7 @@
-#ifndef PROTOCOLUWB_H
-#define PROTOCOLUWB_H
+#ifndef ProtocolUWB_H
+#define ProtocolUWB_H
 
+#include <QObject>
 #include <QSerialPort>
 #include <QDebug>
 #include <QTimer>
@@ -9,6 +10,7 @@
 #include <QByteArray>
 #include <iostream>
 #include <QMutex>
+
 
 
 //для использования kx-pult
@@ -24,8 +26,6 @@ struct HeaderUWB  {
 };
 
 struct DataUWB {
-
-
     HeaderUWB headerUWB;
     uint16_t crc = 0;
   //  uint16_t agentIdent = 0;// идентификация подключенных агентов
@@ -67,26 +67,27 @@ struct Distance
 
 #pragma pack(pop)
 
-class protocolUWB: public QObject
+class ProtocolUWB: public QObject
 {
     Q_OBJECT
 public:
-    RecDataUWB dataSend;
+    RecDataUWB msg;
+    DataUWB dataSend;
+    RecDataUWB dataTril;
     Distance dist;
     Distance integ;
-    protocolUWB(const QString& portName,
+    explicit ProtocolUWB(const QString& portName,
                 const qint32 baud,
                 const QSerialPort::DataBits data = QSerialPort::Data8,
                 const QSerialPort::StopBits stop = QSerialPort::OneStop,
                 const QSerialPort::Parity parity = QSerialPort::NoParity,
                 const QSerialPort::FlowControl flow = QSerialPort::NoFlowControl,
                 QObject* parent = nullptr);
-  void settings(QObject *parent);
-  virtual ~protocolUWB();
+  void settings(QObject *parent = nullptr);
+//  virtual ~ProtocolUWB();
   DataUWB dataUWB; // структура вывода данных
   HeaderUWB headerUWB;
   int i [6];
-   float filt_mas[10][6] ;
 
    bool correctChecksum (QByteArray const &ba);//это метод, который проверяет корректность чексуммы
 
@@ -111,38 +112,23 @@ private slots:
 public slots:
     virtual void start();
     virtual void stop();
-    void updateMap();
-signals:
-    void renewR1(double r);
-    void renewR2(double r);
-    void renewR3(double r);
-    void renewCurrentCoords(double _x, double _y);
 
 protected:
     QTimer timer;
-    void integrate(double &input, double &output, double &prevOutput, double dt);
+
     unsigned short calculateCRC(QByteArray array);
     QByteArray m_buffer;
     void parseBuffer();
     void printBuffer();
-    float dt =0;
-    void matrix();
-    float A[4][4];
-    float b[4];
-    void prikol();
-    float distanceCalc();// разбираем что пришло в посылке с датчика
-    float saturation(float input, double &prevOutput, float max, float min);
-    float filter(float input, double &output, int &i, int j);
-    RecDataUWB* msg;
-    QTime timeRegulator;
-    void trilater();
-    int x1, x2, x3, y1, y2, y3, z1, z2, z3;
-
+//    TrilatUWB *tUWB = nullptr;
 
 signals:
     void started();
     void finished();
 
+    void renewMSG(RecDataUWB msg);
+    void renewMapMsg(RecDataUWB msg);
+
 };
 
-#endif // PROTOCOLUWB_H
+#endif // ProtocolUWB_H

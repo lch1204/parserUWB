@@ -11,6 +11,7 @@
 #include <QtCharts/QChart>
 #include <QtWidgets/QGraphicsView>
 #include <QLineSeries>
+#include "protocoluwb.h"
 
 namespace Ui {
 class Map;
@@ -31,6 +32,8 @@ public slots:
     void drawCurrentCoords(double x, double y);
     //void draw
 
+   void printInf(RecDataUWB msg);// разбираем что пришло в посылке с датчика
+
 protected:
     double x1,y1;
     double x2,y2;
@@ -43,8 +46,8 @@ protected:
     QLineSeries *circle1 = nullptr;
     QLineSeries *circle2 = nullptr;
     QLineSeries *circle3 = nullptr;
-
-
+    int prov[8];
+    int error_counter =0;
 };
 
 #endif // MAP_H

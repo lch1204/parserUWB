@@ -16,8 +16,8 @@ SOURCES += \
         kx_pult/qkx_coeffs.cpp \
         kx_pult/qpiconfig.cpp \
         main.cpp \
-        protocoluwb.cpp \
-        trilatUWB.cpp
+        ProtocolUWB.cpp \
+        TrilatUWB.cpp
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
@@ -29,6 +29,7 @@ HEADERS += \
     kx_pult/kx_protocol.h \
     kx_pult/qkx_coeffs.h \
     kx_pult/qpiconfig.h \
-    protocoluwb.h
+    ProtocolUWB.h \
+    TrilatUWB.h
 
 FORMS += map/map.ui
