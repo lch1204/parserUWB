@@ -47,7 +47,10 @@ protected:
     QLineSeries *circle2 = nullptr;
     QLineSeries *circle3 = nullptr;
     int prov[8];
+    int prov_error[8];
     int error_counter =0;
+private slots:
+    void on_pushButton_clicked();
 };
 
 #endif // MAP_H

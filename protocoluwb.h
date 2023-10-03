@@ -10,7 +10,7 @@
 #include <QByteArray>
 #include <iostream>
 #include <QMutex>
-
+//#include "trilatUWB.h"// ТАК НЕЛЬЗЯ ДЕЛАТЬ
 
 
 //для использования kx-pult
@@ -26,7 +26,23 @@ struct HeaderUWB  {
 };
 
 struct DataUWB {
+    uint8_t message_type = 0;
+    uint8_t message_length = 12;
     HeaderUWB headerUWB;
+    uint8_t null = 0;
+    uint16_t null2 = 0;
+    uint16_t crc = 0;
+  //  uint16_t agentIdent = 0;// идентификация подключенных агентов
+    //посылка которую должен написать Дима
+};
+
+struct CalibrationUWB {
+    uint8_t message_type = 1;
+    uint8_t message_length = 12;
+    uint16_t delay0 = 16475;
+    uint16_t delay1 = 16475;
+    uint16_t delay2 = 16475;
+    uint16_t delay3 = 16475;
     uint16_t crc = 0;
   //  uint16_t agentIdent = 0;// идентификация подключенных агентов
     //посылка которую должен написать Дима
@@ -71,6 +87,7 @@ class ProtocolUWB: public QObject
 {
     Q_OBJECT
 public:
+    CalibrationUWB calibrationUWB;
     RecDataUWB msg;
     DataUWB dataSend;
     RecDataUWB dataTril;
@@ -84,7 +101,7 @@ public:
                 const QSerialPort::FlowControl flow = QSerialPort::NoFlowControl,
                 QObject* parent = nullptr);
   void settings(QObject *parent = nullptr);
-//  virtual ~ProtocolUWB();
+  virtual ~ProtocolUWB();
   DataUWB dataUWB; // структура вывода данных
   HeaderUWB headerUWB;
   int i [6];
@@ -100,9 +117,11 @@ private:
   QSerialPort::Parity mParity;
   QSerialPort::FlowControl mFlow;
   QTimer mTimer;
+
   bool isConnected = false;
   bool sendData();
   void recData();
+  void calibData();
   static constexpr int REQUEST_TIME = 100;
   mutable QMutex mGuard;
 
@@ -114,8 +133,9 @@ public slots:
     virtual void stop();
 
 protected:
+//    TrilatUWB *trilat = nullptr;
     QTimer timer;
-
+    QTimer timerCalib;
     unsigned short calculateCRC(QByteArray array);
     QByteArray m_buffer;
     void parseBuffer();
@@ -127,6 +147,7 @@ signals:
     void finished();
 
     void renewMSG(RecDataUWB msg);
+    void renew (uint16_t size);
     void renewMapMsg(RecDataUWB msg);
 
 };

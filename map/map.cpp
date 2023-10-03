@@ -36,7 +36,10 @@ Map::Map(QWidget *parent) :
     chartView = new QChartView(chart);
 
 
-
+    for (int i =0; i<8; i++)
+    {
+        prov_error[i]=0;
+    }
     ui->verticalLayout_map->addWidget(chartView);
 
 
@@ -134,7 +137,32 @@ void Map::printInf(RecDataUWB msg)
     ui->prov5->setNum(prov[5]);
     ui->prov6->setNum(prov[6]);
     ui->prov7->setNum(prov[7]);
+    connect(ui->pushButton, SIGNAL(clicked()), this, SLOT(on_pushButton_clicked()));
 //    ui->error->setNum(static_cast<double>(msg.error_code));
+    if (msg.error_code == 1)
+    {
+        prov_error[0]+=msg.error_code;
+        ui->error_code1->setNum(prov_error[0]);
+
+    }
+    if (msg.error_code == 2)
+    {
+        prov_error[1]+=msg.error_code;
+        ui->error_code2->setNum(prov_error[1]);
+
+    }
+    if (msg.error_code == 3)
+    {
+        prov_error[2]+=msg.error_code;
+        ui->error_code3->setNum(prov_error[2]);
+
+    }
+    if (msg.error_code == 4)
+    {
+        prov_error[3]+=msg.error_code;
+        ui->error_code4->setNum(prov_error[3]);
+
+    }
     error_counter+=msg.error_code;
     ui->error->setNum(error_counter);
 //    if (msg.error_code !=0)
@@ -142,3 +170,9 @@ void Map::printInf(RecDataUWB msg)
 //        error_counter++;
 //    }
 }
+
+void Map::on_pushButton_clicked()
+{
+
+}
+

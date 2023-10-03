@@ -5,6 +5,9 @@
 #include "map/map.h"
 #include "trilatUWB.h"
 #include <QObject>
+#include <calibration.h>
+#include <QTimer>
+#include <QTime>
 
 const QString ConfigFile = "protocols.conf";
 const QString XI = "xi";
@@ -31,7 +34,10 @@ int main(int argc, char *argv[])
     protUWB->moveToThread(&uwbThread);
     QObject::connect(&uwbThread, &QThread::started, protUWB, &ProtocolUWB::start);
     uwbThread.start();
+    Calibration *calib = new Calibration( protUWB);
 
+    uint16_t size = 100;
+    QObject::connect(protUWB, &ProtocolUWB::renew, calib, &Calibration::newCalibration, Qt::BlockingQueuedConnection);
 
     QObject::connect(protUWB, &ProtocolUWB::renewMSG, trUWB, &TrilatUWB::distanceCalc, Qt::BlockingQueuedConnection);
     QObject::connect(protUWB, &ProtocolUWB::renewMapMsg, &map, &Map::printInf, Qt::BlockingQueuedConnection);
@@ -39,6 +45,10 @@ int main(int argc, char *argv[])
     QObject::connect(trUWB, &TrilatUWB::renewR2, &map, &Map::drawCircle2);
     QObject::connect(trUWB, &TrilatUWB::renewR3, &map, &Map::drawCircle3);
     QObject::connect(trUWB, &TrilatUWB::renewCurrentCoords, &map, &Map::drawCurrentCoords);
+
+
+
+
 
     return a.exec();
 }

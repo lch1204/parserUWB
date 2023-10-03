@@ -1,4 +1,4 @@
-#include "TrilatUWB.h"
+#include "trilatUWB.h"
 //#include <QThread>
 #include "protocoluwb.h"
 
@@ -55,8 +55,8 @@ void TrilatUWB::distanceCalc(RecDataUWB msg)
     dt = timeRegulator.elapsed()*0.001;//реальный временной шаг цикла
     timeRegulator.start();
     //сейчас будут написаны переменные, которые в дальнейшем должны быть внесены в Данину программу
-//    float a01 = 2.3533;
-    float a01 =2.6252;
+    float a01 = 2.3533;
+//    float a01 =2.6252;
     float a02 = 2.363312;
     float a03 = 2.2705;
     float a12 = 2.3328;
@@ -64,12 +64,22 @@ void TrilatUWB::distanceCalc(RecDataUWB msg)
     float a23 = 2.2574;
 
 //    float const01 = 32918;
-    float const01 = 32901;
-    float const02 = 32951;
-    float const03 = 32915;
-    float const12 = 32922;
-    float const13 = 32907;
-    float const23 = 32955;
+////    float const01 = 32901;
+//    float const02 = 32951;
+//    float const03 = 32915;
+//    float const12 = 32922;
+//    float const13 = 32907;
+//    float const23 = 32955;
+    float const01 =0;
+    float const02 =0;
+    float const03 =0;
+    float const12 =0;
+    float const13 =0;
+    float const23 =0;
+
+    float frequency = 63.8976; //ГГц
+    float c = 29.9792458; //см/нс
+
 
 //    qDebug() << dataSend.time01;
 //    X[71][0] = dataSend.time01;
@@ -86,12 +96,28 @@ void TrilatUWB::distanceCalc(RecDataUWB msg)
     dist.distance13 = ((msg.time13-const13)/a13 + (msg.time31-const13)/a13)/2;
     dist.distance23 = ((msg.time23-const01)/a23 + (msg.time32-const23)/a23)/2;
 
+//    dist.distance01 = ((msg.time01) + (msg.time10))*2*c/frequency;
+//    dist.distance02 = ((msg.time02) + (msg.time20))*2*c/frequency;
+//    dist.distance03 = ((msg.time03) + (msg.time30))*2*c/frequency;
+//    dist.distance12 = ((msg.time12) + (msg.time21))*2*c/frequency;
+//    dist.distance13 = ((msg.time13) + (msg.time31))*2*c/frequency;
+//    dist.distance23 = ((msg.time23) + (msg.time32))*2*c/frequency;
+
+    qDebug() << dist.distance01;
+
     X[1][0] = saturation(dist.distance01, X[11][1], 1400, 0);
     X[2][0] = saturation(dist.distance02, X[12][1], 1400, 0);
     X[3][0] = saturation(dist.distance03, X[13][1], 1400, 0);
     X[4][0] = saturation(dist.distance12, X[14][1], 1400, 0);
     X[5][0] = saturation(dist.distance13, X[15][1], 1400, 0);
     X[6][0] = saturation(dist.distance23, X[16][1], 1400, 0);
+
+//    X[1][0] = saturation(dist.distance01, X[11][1], 10000, 0);
+//    X[2][0] = saturation(dist.distance02, X[12][1], 10000, 0);
+//    X[3][0] = saturation(dist.distance03, X[13][1], 10000, 0);
+//    X[4][0] = saturation(dist.distance12, X[14][1], 10000, 0);
+//    X[5][0] = saturation(dist.distance13, X[15][1], 10000, 0);
+//    X[6][0] = saturation(dist.distance23, X[16][1], 10000, 0);
 
     integrate(X[1][0], X[41][0], X[41][1], dt);
     integrate(X[2][0], X[42][0], X[42][1], dt);
