@@ -2,6 +2,8 @@
 #include <math.h>
 #include "QDataStream"
 
+namespace UWB {
+
 
 ProtocolUWB::ProtocolUWB(const QString& portName,
                          const qint32 baud,
@@ -17,9 +19,8 @@ ProtocolUWB::ProtocolUWB(const QString& portName,
     mParity(parity),
     mFlow(flow),
     mTimer(this) {
+    protUWB = new QSerialPort(this);
     connect(&mTimer, &QTimer::timeout, this, &ProtocolUWB::tick_UWB);
-    connect(&timerCalib, &QTimer::timeout, this, &ProtocolUWB::calibData);
-    timerCalib.start(5000);
 
 
     //алгоритм обращения к каждому биту
@@ -35,7 +36,7 @@ ProtocolUWB::ProtocolUWB(const QString& portName,
 void ProtocolUWB::start()
 {
     if (protUWB->isOpen()) {
-        qDebug() << "Duplicate open request";
+//        qDebug() << "Duplicate open request";
         return;
     }
     protUWB->setPortName(mPortName);
@@ -52,6 +53,8 @@ void ProtocolUWB::start()
     mTimer.start(1000);
     qDebug() << "Port opened";
     isConnected = true;
+//    sendData();
+
     emit started();
     return;
 }
@@ -59,6 +62,8 @@ void ProtocolUWB::start()
 void ProtocolUWB::tick_UWB()
 {
 //    sendData();
+//    qDebug() << "все норм"
+    qDebug()<<"tick_UWB";
    if( sendData())
    {
        mTimer.stop();
@@ -67,52 +72,18 @@ void ProtocolUWB::tick_UWB()
    }
 }
 
-void ProtocolUWB::calibData()
-{
-    bool ret  = true;
-    calibrationUWB.delay0=calibrationUWB.delay1=calibrationUWB.delay2=calibrationUWB.delay3=calibrationUWB.delay0+1;
-    QByteArray packet;
-    packet.append(calibrationUWB.message_type);
-    packet.append(calibrationUWB.message_length);
-    quint8 delay0_low = calibrationUWB.delay0 & 0xff;
-    quint8 delay0_high = (calibrationUWB.delay0 >> 8);
-    packet.append(delay0_low);
-    packet.append(delay0_high);
-    quint8 delay1_low = calibrationUWB.delay1 & 0xff;
-    quint8 delay1_high = (calibrationUWB.delay1 >> 8);
-    packet.append(delay1_low);
-    packet.append(delay1_high);
-    quint8 delay2_low = calibrationUWB.delay2 & 0xff;
-    quint8 delay2_high = (calibrationUWB.delay2 >> 8);
-    packet.append(delay2_low);
-    packet.append(delay2_high);
-    quint8 delay3_low = calibrationUWB.delay3 & 0xff;
-    quint8 delay3_high = (calibrationUWB.delay3 >> 8);
-    packet.append(delay3_low);
-    packet.append(delay3_high);
-    qint16  crc = calculateCRC(packet);
-    qint8 crc_low = crc & 0xff;
-    qint8 crc_high = (crc >> 8);
-    packet.append(crc_low);
-    packet.append(crc_high);
-    qint64 bytesWritten = protUWB->write(packet);
-    if ((bytesWritten != packet.size())) {
-        qDebug() << protUWB->errorString();
-        ret = false;
-    }
-    qDebug() << "отправлено: число байт: " <<bytesWritten<<" калибровочный коэффициент"<< calibrationUWB.delay0;
-    packet.clear();
-}
-
 void ProtocolUWB::recData()
 {
+//    qDebug() << "все норм1";
     m_buffer.append(protUWB->readAll());
+//    qDebug() << "все норм2";
     parseBuffer();
 }
 
 void ProtocolUWB::parseBuffer()
 {
     if (m_buffer.size() <= 2 ) //проверка, что размер буфера больше, чем размер сообщения
+    // исправить 4 на правдивое значение
     {
         return;
     }
@@ -124,11 +95,14 @@ void ProtocolUWB::parseBuffer()
         return;
     }
     if ( m_buffer.size() <= index + 58 ) {// заменить 55
-        qDebug() << "маленький буфер";
         return;
     }
     if (correctChecksum(m_buffer.mid(index, 58))) {
+//        qDebug()<<"init tmp";
         auto tmp = m_buffer.mid(index, 58);
+//        msg = reinterpret_cast<RecDataUWB*>(m_buffer.data()+index);
+
+//qDebug()<<"work with strream";
         QDataStream stream(&tmp, QIODevice::ReadOnly);
         stream.setByteOrder(QDataStream::LittleEndian);
         stream.setFloatingPointPrecision(QDataStream::SinglePrecision);
@@ -151,19 +125,33 @@ void ProtocolUWB::parseBuffer()
         stream >> msg.time31;
         stream >> msg.time32;
         stream >> msg.crc;
+
+
+//        qDebug() << "time23:        " << msg->time23;
 //        printBuffer();
-        emit renewMapMsg(msg);
+//        dataTril = msg;
+//        qDebug() << dataTril.crc;
+//       emit renewMapMsg(msg);
         emit renew(100);
+//        qDebug()<<"signals: ";
         if (msg.error_code == 0)
         {
         emit renewMSG(msg);
         }
+        else {
+
+        }
+//        qDebug()<<"index : "<<index<<" size : "<<m_buffer.size();
         m_buffer.remove(0, index+57);
+//        qDebug()<<"passed";
+//        m_buffer.clear();
     }
     else {
-        qDebug() << "фигню отправил";
+//        qDebug()<<"index : "<<index<<" size : "<<m_buffer.size();
         m_buffer.remove(0, index+1);
-         }
+ //       qDebug()<<"passed";
+    }
+
     return;
 }
 
@@ -200,44 +188,39 @@ void ProtocolUWB::printBuffer()
 bool ProtocolUWB::sendData() {
     bool ret  = true;
     QByteArray packet;
-    packet.append(dataSend.message_type);
-    packet.append(dataSend.message_length);
+// вся посылка не правильная, исправлю когда дима скажет нормальную посылку
     packet.append(dataSend.headerUWB.agents_number);
     packet.append(dataSend.headerUWB.self_index);
-    packet.append(dataSend.null);
-    packet.append(dataSend.null);
-    packet.append(dataSend.null);
-    packet.append(dataSend.null);
-    packet.append(dataSend.null);
-    packet.append(dataSend.null);
     qint16  crc = calculateCRC(packet);
     qint8 crc_low = crc & 0xff;
     qint8 crc_high = (crc >> 8);
     packet.append(crc_low);
     packet.append(crc_high);
     qint64 bytesWritten = protUWB->write(packet);
+//    qint64 bytesWritten = protUWB->read(packet);
     if ((bytesWritten != packet.size())) {
         qDebug() << protUWB->errorString();
         ret = false;
     }
-    qDebug()<<"Отправлено через send data "<< bytesWritten << "байт";
     packet.clear();
     return ret;
 }
 
-
-
 unsigned short ProtocolUWB::calculateCRC(QByteArray array) {
+
     int len = array.size();
     quint16 wcrc = 0xFFFF; // preset 16 position crc register , The initial values are all 1
     quint8 temp;// Define intermediate variables
     int i = 0, j = 0; // Define count
     for (i = 0; i < len; i++) { // Cycle through each data
+
         temp = array.at(i);
         wcrc ^= temp;
         for (j = 0; j < 8; j++) {
+
             // Judge whether what is moved to the right is 1, If it is 1 XOR with polynomials .
             if (wcrc & 0x0001) {
+
                 wcrc >>= 1; // First move the data one bit to the right
                 wcrc ^= 0xA001; // XOR with the polynomial above
             } else // If not 1, Then directly remove
@@ -255,7 +238,6 @@ bool ProtocolUWB::correctChecksum (QByteArray const &ba) {
     if ((crc_low == ba[56]) & (crc_high == ba[57])) {
         return true;
     }
-    qDebug() << "плохая crc";
     return false;
 }
 
@@ -269,3 +251,12 @@ void ProtocolUWB::stop() {
 ProtocolUWB::~ProtocolUWB() {
     stop();
 }
+
+}// namespace UWB
+
+//--------------------------------------------------------------------------------
+//окончание парсинга посылки, далее идет разбор посылки
+//--------------------------------------------------------------------------------
+
+
+
