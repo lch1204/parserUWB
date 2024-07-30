@@ -72,7 +72,7 @@ void Calibration::integrate(uint32_t &input, double &output, double &prevOutput,
 
 void Calibration:: newCalibration(uint16_t size)
 {
-//    qDebug() << "зашел";
+    qDebug() << "зашел";
     dt = timeRegulator.elapsed()*0.001;//реальный временной шаг цикла
     timeRegulator.start();
     for (iteretion=0; iteretion<=100;iteretion++)
@@ -163,14 +163,14 @@ void Calibration::analysisCalib(uint16_t size)
         distance21[i] = ((protUWB->msg.time21-delay_data_21[i])/a);
         distance31[i] = ((protUWB->msg.time31-delay_data_31[i])/a);
 
-       delta01[i] = (112 - distance01[i]);
-       delta02[i] = (103 - distance02[i]);
-       delta03[i] = (170 - distance03[i]);
+       delta01[i] = (200 - distance01[i]);
+       delta02[i] = (300 - distance02[i]);
+       delta03[i] = (300 - distance03[i]);
        delta12[i] = (215 - distance12[i]);
        delta13[i] = (210 - distance13[i]);
-       delta10[i] = (112 - distance10[i]);
-       delta20[i] = (103 - distance20[i]);
-       delta30[i] = (170 - distance30[i]);
+       delta10[i] = (200 - distance10[i]);
+       delta20[i] = (300 - distance20[i]);
+       delta30[i] = (300 - distance30[i]);
        delta21[i] = (215 - distance21[i]);
        delta31[i] = (210 - distance31[i]);
 

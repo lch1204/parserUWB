@@ -49,8 +49,8 @@ float TrilatUWB::filter(float input, double &output, int &i, int j)
 }
 
 void TrilatUWB::integrate(double &input, double &output, double &prevOutput, double dt) {
-
-    output = (prevOutput + dt*input/1)/(1+dt/1);
+int T = 1;
+    output = (prevOutput + dt*input/T)/(1+dt/T);
 //    qDebug() << output;
     prevOutput = output;
 }
@@ -91,15 +91,15 @@ void TrilatUWB::distanceCalc(RecDataUWB msg)
 //    float const31 = 32907;
 //    float const32 = 32955;
 
-    float const01 = 32900;
-    float const02 = 32972;
-    float const03 = 33016;
+    float const01 = 32912.9;
+    float const02 = 32951.6;
+    float const03 = 32968.2;
     float const12 = 32950;
     float const13 = 32971;
     float const23 = 32955;
-    float const10 = 32900;
-    float const20 = 32972;
-    float const30 = 33015;
+    float const10 = 32974.9;
+    float const20 = 33129.9;
+    float const30 = 32971.6;
     float const21 = 32947;
     float const31 = 32974;
     float const32 = 32955;
@@ -162,7 +162,17 @@ void TrilatUWB::distanceCalc(RecDataUWB msg)
 
 void TrilatUWB::trilater()
 {
-//    qDebug()<<"trilater started";
+    //    qDebug()<<"x init passed";
+    //    x1 = 90;
+    float    x1 = 0;
+    float    x2 = 0;
+    float    x3 = 210;
+    //    y1 = 185;
+    float    y1 = 1000;
+    float    y2 = 0;
+    float    y3 = 0;
+      z1 = z2= z3 = 0.;
+    qDebug()<<"trilater started";
  // примем,что x1y1 (0, 100); x2y2(0,0), x3y3(100,0)
 //    x1 = auvProtocol->rec_data.pultUWB.beacon_x[0];
 //    x2 = auvProtocol->rec_data.pultUWB.beacon_x[1];
@@ -177,16 +187,7 @@ void TrilatUWB::trilater()
 //    qDebug() << "y2: " << y2;
 //    qDebug() << "y3: " << y3;
 
-//    qDebug()<<"x init passed";
-//    x1 = 90;
-    x1 = 100;
-    x2 = 0;
-    x3 = 190;
-//    y1 = 185;
-    y1 = 185;
-    y2 = 0;
-    y3 = 0;
-    z1 = z2= z3 = 0;
+
     //следующие две формулы будут использоваться, если 1(0, y1, 0), 2(0, 0, 0), 3(x1, 0, 0)
 //    float y0 = (y1*y1 + (distAp.distance02)*(distAp.distance02) - distAp.distance01*distAp.distance01)/(2*y1);
 //    float x0 = (x3*x3+distAp.distance02*distAp.distance02-distAp.distance03*distAp.distance03)/(2*x3);
@@ -195,15 +196,22 @@ void TrilatUWB::trilater()
     float x0 = (x3*x3+dist.distance02*dist.distance02-dist.distance03*dist.distance03)/(2*x3);
     float y0 = (y1*y1 + x1*x1 + (dist.distance02)*(dist.distance02) - dist.distance01*dist.distance01)/(2*y1) - x0*x1/y1;
 //    float z0 = sqrt(dist.distance02*dist.distance02-x0*x0-y0*y0);
-    qDebug() <<"x0: "<< x0;
-    qDebug() <<"y0: "<< y0;
+//    qDebug() <<"x0: "<< x0;
+//    qDebug() <<"y0: "<< y0;
     ::X[523][0] = x0;
     ::X[524][0] = y0;
     ::X[521][0] = saturation(::X[523][0], ::X[523][1], 1000, -100);
     ::X[522][0] = saturation(::X[524][0], ::X[524][1], 1000, -100);
 //    qDebug()<<"before integrate";
-    integrate(::X[521][0], ::X[551][0], ::X[551][1], dt);
-    integrate(::X[522][0], ::X[552][0], ::X[552][1], dt);
+  //  integrate(::X[521][0], ::X[551][0], ::X[551][1], dt);
+ //   integrate(::X[522][0], ::X[552][0], ::X[552][1], dt);
+
+    qDebug() <<"::X[551][0]: "<< ::X[551][0];
+    qDebug() <<"::X[552][0]: "<< ::X[552][0];
+    qDebug() <<"::X[541][0]: "<< ::X[541][0];
+    qDebug() <<"::X[542][0]: "<< ::X[542][0];
+    qDebug() <<"::X[543][0]: "<< ::X[543][0];
+
 //    qDebug()<<"trilater passed";
 }
 
@@ -214,6 +222,6 @@ void TrilatUWB::updateMap()
     emit renewR1(::X[541][0]);
     emit renewR2(::X[542][0]);
     emit renewR3(::X[543][0]);
-    emit renewCurrentCoords(::X[551][0],::X[552][0]);
+  //  emit renewCurrentCoords(::X[551][0],::X[552][0]);
 }
 }
